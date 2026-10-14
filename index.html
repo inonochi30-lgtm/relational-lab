@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Лаборатория отношений</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --bg: #141a24;
+    --ink: #c9d0da;
+    --dim: #7d8898;
+    --line: rgba(201, 208, 218, 0.16);
+    --bond: #efe6d6;
+    --gold: #d9b86c;
+    --panel: rgba(20, 26, 36, 0.82);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #141a24; } }
+  :root[data-theme="dark"] { --bg: #141a24; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  html, body {
+    height: 100%; margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    overflow: hidden; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  #c { position: fixed; top: 0; left: 0; width: 100vw; height: 100%; display: block; touch-action: none; }
+  header {
+    position: fixed; left: 0; right: 0;
+    top: env(safe-area-inset-top, 0px);
+    padding: 14px 16px 0;
+    pointer-events: none;
+  }
+  h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.005em; }
+  #stats { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--dim); max-width: 36em; }
+  /* статистика по умолчанию в две строки — чтобы поле не сжималось от длинного текста */
+  #stats.short { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #statsBtn { pointer-events: auto; margin-top: 4px; font-size: 12px; padding: 3px 10px; }
+  #stats b { color: var(--ink); font-weight: 500; }
+  footer {
+    position: fixed; left: 0; right: 0;
+    bottom: env(safe-area-inset-bottom, 0px);
+    padding: 10px 12px 12px;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    max-height: 46vh; overflow-y: auto;
+  }
+  footer.collapsed .controls, footer.collapsed #hint { display: none; }
+  #toggleCtl { margin-bottom: 8px; }
+  /* панель «На чём держится эта лаборатория» */
+  #about { position: fixed; inset: 0; z-index: 30; background: var(--bg); overflow-y: auto;
+    padding: calc(env(safe-area-inset-top, 0px) + 22px) 22px calc(env(safe-area-inset-bottom, 0px) + 28px); }
+  #about[hidden] { display: none; }
+  #about .in { max-width: 34em; margin: 0 auto; line-height: 1.55; }
+  #about h2 { font-size: 20px; margin: 0 0 14px; font-weight: 600; }
+  #about p { margin: 0 0 12px; }
+  #about .f { color: var(--gold); white-space: nowrap; }
+  #about .small { color: var(--dim); font-size: 13px; margin-top: 18px; }
+  #aboutClose { margin-top: 10px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .controls label { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+  input[type="range"] { width: 110px; accent-color: var(--gold); }
+  button {
+    font: inherit; font-size: 13px; color: var(--ink);
+    background: transparent; border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 12px; cursor: pointer;
+  }
+  button[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  #plotWrap[hidden] { display: none; }
+  #pairWrap[hidden] { display: none; }
+  #pairWrap {
+    position: fixed; left: 12px; right: 12px;
+    bottom: calc(var(--footH, 150px) + 6px);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 12px; font-size: 12px; color: var(--dim); line-height: 1.4;
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  }
+  #pairWrap h2 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  #pairChart { display: block; width: 100%; height: 90px; }
+  .legend { display: flex; gap: 12px; margin: 2px 0 4px; }
+  .legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+  #pairLog { margin: 4px 0 0; padding: 0; list-style: none; max-height: 4.3em; overflow: hidden; }
+  #pairLog b { color: var(--ink); font-weight: 500; }
+  #plotWrap {
+    position: fixed; right: 12px;
+    top: calc(env(safe-area-inset-top, 0px) + 74px);
+    width: 132px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px; font-size: 11px; color: var(--dim); line-height: 1.35;
+  }
+  #plot { display: block; width: 116px; height: 116px; margin-top: 4px; }
+  #hint { margin-top: 8px; font-size: 12px; color: var(--dim); }
+  @media (max-width: 380px) { input[type="range"] { width: 84px; } }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Поле частиц"></canvas>
+<header>
+  <h1 data-ru="Лаборатория отношений" data-en="Relational Laboratory">Лаборатория отношений</h1>
+  <p id="stats" class="short"></p>
+  <button id="statsBtn" aria-expanded="false">Вся статистика</button>
+</header>
+<div id="plotWrap" aria-label="Проверка порога" hidden>
+  <span data-ru="Порог связывания: предсказан (→) и измерен (↑)" data-en="Binding threshold: predicted (→) and measured (↑)">Порог связывания: предсказан (→) и измерен (↑)</span>
+  <canvas id="plot" width="232" height="232"></canvas>
+</div>
+<section id="pairWrap" aria-label="История одной пары" hidden>
+  <h2 id="pairTitle">История пары</h2>
+  <div class="legend">
+    <span><i style="background:#d9b86c"></i><span data-ru="опыт первой" data-en="experience of first">опыт первой</span></span>
+    <span><i style="background:#9c7b3e"></i><span data-ru="второй" data-en="of second">второй</span></span>
+    <span><i style="background:#efe6d6"></i><span data-ru="совпадение сейчас M" data-en="coherence now M">совпадение сейчас M</span></span>
+    <span><i style="background:#6f8fb8"></i><span data-ru="расстояние" data-en="distance">расстояние</span></span>
+  </div>
+  <canvas id="pairChart"></canvas>
+  <ul id="pairLog"></ul>
+</section>
+<div id="about" hidden role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="in">
+    <h2 id="aboutTitle" data-ru="На чём держится эта лаборатория" data-en="What this laboratory rests on">На чём держится эта лаборатория</h2>
+    <p><span class="f">A f B = C,  C ∉ {A, B}</span></p>
+    <p data-ru="Аксиома реляционного порождения: взаимодействие создаёт то, чего не было ни в одном из участников." data-en="The axiom of relational generation: interaction creates what was in neither participant.">Аксиома реляционного порождения: взаимодействие создаёт то, чего не было ни в одном из участников.</p>
+    <p data-ru="Связность m порождается самим взаимодействием. Она может быть отрицательной — тогда это трение." data-en="Coherence m is produced by the interaction itself. It can be negative — then it is friction.">Связность m порождается самим взаимодействием. Она может быть отрицательной — тогда это трение.</p>
+    <p><span class="f">I = ∫ m dt</span></p>
+    <p data-ru="Опыт — не запись о прошлом, а часть того, чем система является." data-en="Experience is not a record of the past but part of what a system is.">Опыт — не запись о прошлом, а часть того, чем система является.</p>
+    <p><span class="f">f = f(A, B, I)</span></p>
+    <p data-ru="Связь зависит от опыта. История, которая не меняет следующую встречу, — только запись. История, которая меняет, — структура." data-en="Coupling depends on experience. History that does not change the next encounter is only a record. History that does is structure.">Связь зависит от опыта. История, которая не меняет следующую встречу, — только запись. История, которая меняет, — структура.</p>
+    <p><span class="f">I ≥ I<sub>crit</sub></span></p>
+    <p data-ru="Когда опыта достаточно, меняется не состояние, а само пространство возможного." data-en="When there is enough experience, what changes is not the state but the space of the possible itself.">Когда опыта достаточно, меняется не состояние, а само пространство возможного.</p>
+    <p data-ru="Широта — сколько несовпадения система может вместить, прежде чем встреча станет трением." data-en="Width is how much mismatch a system can hold before an encounter becomes friction.">Широта — сколько несовпадения система может вместить, прежде чем встреча станет трением.</p>
+    <p class="small" data-ru="Здесь частицы — это A и B, цвет — их ритм. Группы никто не рисует: их находят. Теория — Lolla March, «The Space of Becoming»." data-en="Here the particles are A and B, and colour is their rhythm. Nobody draws the groups: they are found. Theory: Lolla March, The Space of Becoming.">Здесь частицы — это A и B, цвет — их ритм. Группы никто не рисует: их находят. Теория — Lolla March, «The Space of Becoming».</p>
+    <button id="aboutClose" data-ru="Вернуться к частицам" data-en="Back to the particles">Вернуться к частицам</button>
+  </div>
+</div>
+<footer>
+  <button id="toggleCtl" aria-expanded="true">Скрыть настройки</button>
+  <div class="controls">
+    <button id="exp" aria-pressed="true">Опыт копится</button>
+    <button id="fric" aria-pressed="true">Трение есть</button>
+    <label><span data-ru="Разнородность" data-en="Heterogeneity">Разнородность</span> <input id="sigma" type="range" min="0.2" max="2" step="0.1" value="1"></label>
+    <label><span data-ru="Шум" data-en="Noise">Шум</span> <input id="noise" type="range" min="0" max="0.4" step="0.02" value="0.08"></label>
+    <label><span data-ru="Терпимость" data-en="Tolerance">Терпимость</span> <input id="tol" type="range" min="0" max="1" step="0.05" value="0.5"> <span id="tolVal">0.5</span></label>
+    <label><span data-ru="Разброс широты" data-en="Width spread">Разброс широты</span> <input id="spread" type="range" min="0" max="0.5" step="0.05" value="0"> <span id="spreadVal">0</span></label>
+    <label><span data-ru="Непостоянных" data-en="Volatile">Непостоянных</span> <input id="vol" type="range" min="0" max="1" step="0.1" value="0"> <span id="volVal">0%</span></label>
+    <label><span data-ru="Живая широта" data-en="Living width">Живая широта</span> <input id="plast" type="range" min="0" max="3" step="0.25" value="0"> <span id="plastVal">нет</span></label>
+    <label><span data-ru="Время реакции" data-en="Response delay">Время реакции</span> <input id="tau" type="range" min="0" max="2" step="0.1" value="0"> <span id="tauVal">0 с</span></label>
+    <button id="speed" aria-pressed="false" data-ru="Быстрее ×4" data-en="Faster ×4">Быстрее ×4</button>
+    <button id="reset" data-ru="Сначала" data-en="Restart">Сначала</button>
+    <button id="plotBtn" aria-pressed="false" data-ru="График" data-en="Plot">График</button>
+    <button id="pairBtn" aria-pressed="false">Следить за парой</button>
+    <button id="resumeBtn" hidden>Продолжить свой мир</button>
+    <button id="langBtn">English</button>
+    <button id="aboutBtn" data-ru="На чём держится" data-en="What it rests on">На чём держится</button>
+  </div>
+  <div id="hint" data-ru="Цвет — внутренний ритм частицы. Можно взять частицу пальцем и подвести к другой." data-en="Colour is a particle's inner rhythm. You can drag a particle with your finger to another one.">Цвет — внутренний ритм частицы. Можно взять частицу пальцем и подвести к другой.</div>
+</footer>
+
+<script>
+'use strict';
+// ---------- язык интерфейса / interface language ----------
+let LANG = 'ru';
+try { LANG = localStorage.getItem('relLabLang') || 'ru'; } catch (_) {}
+const L = (ru, en) => LANG === 'en' ? en : ru;
+/*
+  ЛАБОРАТОРИЯ ОТНОШЕНИЙ — модель теории {A, B, f, M, C, I}
+
+  Частица i имеет природу ω_i — собственный ритм (цвет). Разнородность σ — разброс природ.
+  Рядом друг с другом частицы подстраивают ритмы (f):
+      dθ_i/dt = ω_i + Σ_j K_ij · sin(θ_j − θ_i) + шум
+  Связность пары M_ij — насколько их ритмы совпадают сейчас (скользящее среднее e^{i(θ_i−θ_j)}).
+  Опыт пары I_ij = ∫ M_ij dt копится только пока они рядом и никогда не убывает.
+  Опыт усиливает связь:  K_ij = K₀ + κ·I_ij,  и притяжение пары  k_ij = k_s·I_ij.
+
+  Порог в коде не задан. Для пары без соседей математика предсказывает его точно
+  (уравнение Адлера): ритмы захватываются, когда K ≥ |ω_i − ω_j|, то есть
+      I_crit(пары) = (|Δω| − K₀) / κ.
+  Лаборатория измеряет, когда захват случился на самом деле, и сравнивает.
+  Если измеренный порог сильно ниже — пару «подтянула» группа: C изменил то, что возможно для A.
+  «Молекула» — группа, связанная захваченными ритмами. Её никто не рисует; её находят.
+
+  Трение (отрицательный опыт): M_s = (M − M0)/(1 − M0), M0 = 0.85 − 0.7·терпимость. Если ритмы совпадают хуже границы,
+  опыт пары уходит в минус. Отрицательный I отталкивает ритмы и тела — избегание.
+  Так I = ∫M dt перестаёт только расти: отношения могут и портиться.
+
+  Опыт направленный: I[i→j] и I[j→i] копятся отдельно, каждый — по своей широте
+  (своя граница совпадения/трения). Подстройка ритма и притяжение/избегание — тоже по своему опыту.
+  Поэтому бывают неразделённые отношения: одному это опыт, другому — трение.
+
+  Живая широта: dW = пластичность · [a·(хороший опыт) + (p·b − (1−p)·c)·(трение)] − медленный возврат.
+  p — шанс переработать трение: растёт с широтой и с поддержкой.
+  Поддержка = широта·(что дают соседи) + (1 − широта)·(простор: мало соседей рядом).
+  Переработанное трение тоже расширяет; непереработанное сужает.
+
+  Время реакции τ: каждый видит ритм и место соседей с опозданием на τ.
+      dθ_i/dt = ω_i + Σ_j K_ij · sin(θ_j(t − τ) − θ_i(t)) + шум
+  Касание тел (отталкивание) — без задержки: пройти сквозь другого нельзя.
+  Для слабой связи общий такт Ω устойчив, пока cos(Ω·τ) > 0. Сильно связанная группа
+  может вместо распада сменить свой такт. Лаборатория показывает, что именно происходит.
+*/
+
+const N = 90;
+const K0 = 0.08, KAPPA = 0.06, KS = 1.4;
+const OMEGA0 = 1.5;               // общий пульс: все природы — вокруг него (цвета медленно переливаются)
+// время реакции: каждый видит соседей такими, какими они были TAU секунд назад
+let TAU = 0;
+const HIST = 241;                 // до 2 с при шаге 1/120
+const hx = new Float32Array(HIST * N), hy = new Float32Array(HIST * N), hth = new Float32Array(HIST * N);
+let hHead = 0, hFill = 0;
+const TAU_M = 2.0;
+let SIGMA = 1.0, NOISE = 0.08, expOn = true, speed = 1;
+// отрицательный опыт: совпадение ниже случайного уровня M0 копится как трение
+let frictionOn = true;
+let TOL = 0.5, SPREAD = 0;         // средняя терпимость и разброс широты между частицами
+const baseTol = new Float32Array(90), tolI = new Float32Array(90), M0i = new Float32Array(90);
+// непостоянные: у части частиц широта сама бродит во времени (то накатывает тревога, то отпускает)
+let VOLFRAC = 0;                                   // доля непостоянных
+const VOL_AMP = 0.35, VOL_TAU = 20;                // размах и характерное время колебаний, с
+const volZ = new Float32Array(90), isVol = new Uint8Array(90), volRank = new Float32Array(90);
+// живая широта: опыт её меняет. Переработанное расширяет (снежинка дорастает),
+// непереработанное трение сужает (система закрывается). Шанс переработать выше у широких
+// и у тех, кого поддерживают соседи.
+let PLAST = 0;                                     // пластичность: 0 — широта застыла, 1 — живая
+const wDyn = new Float32Array(90), tol0 = new Float32Array(90);
+const dWpos = new Float32Array(90), dWneg = new Float32Array(90), nbAll = new Float32Array(90), nbPos = new Float32Array(90), nbGive = new Float32Array(90);
+const support = new Float32Array(90);
+const LW_GROW = 0.0012, LW_LEARN = 0.0006, LW_CLOSE = 0.0018, LW_DECAY = 1 / 600;
+function applyWidths() {
+  for (let i = 0; i < baseTol.length; i++) {
+    isVol[i] = volRank[i] < VOLFRAC ? 1 : 0;
+    const w = TOL + SPREAD * baseTol[i] + (isVol[i] ? VOL_AMP * volZ[i] : 0) + wDyn[i];
+    tolI[i] = Math.min(1, Math.max(0, w)); M0i[i] = 0.85 - 0.7 * tolI[i];
+  }
+}
+let _tolDummy = 0;                    // терпимость: 0 — любое несовпадение трение, 1 — почти ничто не трение
+let M0 = 0.85 - 0.7 * TOL;          // граница «совпадение / трение» для M
+const I_NEG_CAP = 40;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W = 0, H = 0, U = 1, DPR = 1, RP = 6, RINT = 50, RBOND = 90, D0 = 22, TOPB = 0, BOTB = 0, LEFTB = 0, RIGHTB = 0;
+const ASPECT = 457 / 390;            // мир всегда одной формы, как эталонное поле исследования
+function bounds() {
+  const hd = document.querySelector('header'), ft = document.querySelector('footer');
+  const top = (hd ? hd.getBoundingClientRect().bottom : 0) + 8;
+  let bot = (ft ? ft.getBoundingClientRect().top : H) - 4;
+  if (bot - top < 60) bot = top + 60;
+  // Мир — прямоугольник постоянной формы, вписанный в свободное место. Когда место меняется
+  // (свернули панель, развернули статистику), мир не сжимается неравномерно, а целиком
+  // масштабируется: частицы, их связи и расстояния остаются теми же в его единицах.
+  const availW = W, availH = bot - top;
+  let ww, wh;
+  if (availH / availW > ASPECT) { ww = availW; wh = availW * ASPECT; } else { wh = availH; ww = availH / ASPECT; }
+  const L = (W - ww) / 2, T = top + (availH - wh) / 2;
+  const oldU = U, oldL = LEFTB, oldT = TOPB, hadWorld = RIGHTB > LEFTB;
+  LEFTB = L; RIGHTB = L + ww; TOPB = T; BOTB = T + wh;
+  U = ww;                                     // эталон: ширина мира = 390 при поле 390×457
+  RP = U * 0.016; RINT = U * 0.13; RBOND = U * 0.22; D0 = U * 0.06;
+  if (hadWorld && oldU > 0 && (Math.abs(U - oldU) > 0.01 || L !== oldL || T !== oldT)) {
+    const k = U / oldU;
+    try {
+      for (let i = 0; i < N; i++) {
+        x[i] = L + (x[i] - oldL) * k; y[i] = T + (y[i] - oldT) * k; vx[i] *= k; vy[i] *= k;
+      }
+      for (let n2 = 0; n2 < hx.length; n2++) { hx[n2] = L + (hx[n2] - oldL) * k; hy[n2] = T + (hy[n2] - oldT) * k; }
+    } catch (_) {}
+  }
+}
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  if (!(RIGHTB > LEFTB)) U = Math.min(W, H);   // масштаб мира задаёт bounds(); здесь — только до первого раза
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (!(RIGHTB > LEFTB)) { RP = U * 0.016; RINT = U * 0.13; RBOND = U * 0.22; D0 = U * 0.06; }
+}
+window.addEventListener('resize', () => { resize(); if (typeof bounds === 'function') bounds(); });
+resize();
+
+// Случайное число с нормальным распределением (метод Бокса–Мюллера).
+// Раньше здесь было log(random + 1e-9): если random выпадало больше 1 − 1e-9 (примерно раз на миллиард),
+// логарифм становился положительным, корень — «нечислом», и сбой расходился по связям.
+// 1 − random всегда в (0, 1], поэтому логарифм не бывает положительным.
+function gauss() { return Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(6.2831853 * Math.random()); }
+
+// ---------- состояние ----------
+const x = new Float32Array(N), y = new Float32Array(N), vx = new Float32Array(N), vy = new Float32Array(N);
+const th = new Float32Array(N), om = new Float32Array(N), baseOm = new Float32Array(N);
+const NN = N * N;
+const I = new Float32Array(NN), mRe = new Float32Array(NN), mIm = new Float32Array(NN);
+const lockRun = new Float32Array(NN), lockI = new Float32Array(NN), predI = new Float32Array(NN);
+const locked = new Uint8Array(NN), near = new Uint8Array(NN);
+let simT = 0;
+const records = [];              // {pred, meas}
+let comp = new Int32Array(N);
+
+function reset() {
+  bounds();
+  const top = TOPB + RP, bottom = BOTB - RP;
+  for (let i = 0; i < N; i++) {
+    x[i] = LEFTB + RP + Math.random() * (RIGHTB - LEFTB - 2 * RP);
+    y[i] = top + Math.random() * Math.max(10, bottom - top);
+    vx[i] = gauss() * U * 0.05; vy[i] = gauss() * U * 0.05;
+    th[i] = Math.random() * 6.2832;
+    baseOm[i] = gauss();
+    baseTol[i] = Math.max(-2, Math.min(2, gauss()));
+    volZ[i] = gauss(); volRank[i] = Math.random(); wDyn[i] = 0;
+    om[i] = OMEGA0 + baseOm[i] * SIGMA;
+  }
+  I.fill(0); mRe.fill(0); mIm.fill(0); lockRun.fill(0); lockI.fill(0); locked.fill(0); near.fill(0);
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) predI[i * N + j] = Math.max(0, (Math.abs(om[i] - om[j]) - K0) / KAPPA);
+  applyWidths();
+  records.length = 0; simT = 0; hHead = 0; hFill = 0;
+  if (typeof repairs !== 'undefined') { repairs.n = 0; repairs.first = ''; repairs.scanAt = 0; repairs.diag = null; }
+  if (typeof rec !== 'undefined') { rec = []; recNext = 0; }
+  if (typeof actions !== 'undefined') actions = [];
+  if (typeof lastGood !== 'undefined') { lastGood = null; goodNext = 0; goodFrozen = false; autoSent = false; }
+  if (typeof frz !== 'undefined') { frz.flag.fill(0); frz.at.fill(0); frz.nextAt = 0; frz.report = ''; for (let i = 0; i < N; i++) { frz.ax[i] = x[i]; frz.ay[i] = y[i]; } }
+  for (let i = 0; i < N; i++) tol0[i] = tolI[i];
+  if (typeof track !== 'undefined' && track) { track = null; const w = document.getElementById('pairWrap'); if (w) w.hidden = true; const bt = document.getElementById('pairBtn'); if (bt) { bt.textContent = L('Следить за парой', 'Follow a pair'); bt.setAttribute('aria-pressed', 'false'); } }
+}
+
+// ---------- шаг ----------
+const dth = new Float32Array(N), fx = new Float32Array(N), fy = new Float32Array(N), rowK = new Float32Array(N);
+const pI = new Int32Array(NN), pJ = new Int32Array(NN), pK = new Float32Array(NN), pK2 = new Float32Array(NN);
+let np = 0, lastSub = 1;
+let drag = null;
+
+function delayedIndex() {
+  const D = Math.min(hFill, Math.round(TAU / (1 / 120)));
+  return D > 0 ? ((hHead - D) % HIST + HIST) % HIST : -1;
+}
+
+function step(dt) {
+  if (PLAST > 0) { dWpos.fill(0); dWneg.fill(0); nbAll.fill(0); nbPos.fill(0); nbGive.fill(0); }
+  const di = delayedIndex();
+  const Xd = i => di < 0 ? x[i] : hx[di * N + i];
+  const Yd = i => di < 0 ? y[i] : hy[di * N + i];
+  const Td = i => di < 0 ? th[i] : hth[di * N + i];
+  fx.fill(0); fy.fill(0); rowK.fill(0); np = 0;
+  const kap = expOn ? KAPPA : 0;
+  const decayM = dt / TAU_M;
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const dx = x[j] - x[i], dy = y[j] - y[i];
+      const d2 = dx * dx + dy * dy;
+      const p = i * N + j;
+      if (d2 > RBOND * RBOND) { near[p] = 0; lockRun[p] = 0; continue; }
+      const d = Math.sqrt(d2) + 1e-6, nx = dx / d, ny = dy / d;
+      // отталкивание — у каждого своё место
+      if (d < 2 * RP) {
+        const f = U * 40 * (1 - d / (2 * RP));
+        fx[i] -= f * nx; fy[i] -= f * ny; fx[j] += f * nx; fy[j] += f * ny;
+      }
+      // опыт направленный: I[i→j] — что j сделал с i, I[j→i] — что i сделал с j.
+      // Каждый тянется или избегает по СВОЕМУ опыту — один может тянуться, другой отстраняться.
+      const q = j * N + i;
+      if (expOn) {
+        for (let side = 0; side < 2; side++) {
+          const me = side ? j : i, other = side ? i : j, e = side ? I[q] : I[p];
+          let ax = (di < 0 ? x[other] : Xd(other)) - x[me], ay = (di < 0 ? y[other] : Yd(other)) - y[me];
+          const da = Math.hypot(ax, ay) + 1e-6; ax /= da; ay /= da;
+          let f = 0;
+          if (e < 0) f = -KS * Math.min(-e, I_NEG_CAP) * 0.02 * Math.max(0, RBOND - da) * 0.5;
+          else if (e > 0) f = KS * Math.min(e, 40) * 0.02 * (da - D0);
+          fx[me] += f * ax; fy[me] += f * ay;
+        }
+      }
+      if (d > RINT) { near[p] = 0; lockRun[p] = 0; continue; }
+      near[p] = 1;
+      // f: подстройка ритмов
+      // отрицательный опыт отталкивает ритмы: связь становится противодействием
+      // после ~400 единиц опыта связь уже не крепнет: иначе в очень долгих мирах уравнения становятся слишком жёсткими
+      const Ki = K0 + kap * Math.max(Math.min(I[p], 400), -I_NEG_CAP);   // как i подстраивается под j
+      const Kj = K0 + kap * Math.max(Math.min(I[q], 400), -I_NEG_CAP);   // как j подстраивается под i
+      pI[np] = i; pJ[np] = j; pK[np] = Ki; pK2[np] = Kj; np++;
+      rowK[i] += Math.abs(Ki); rowK[j] += Math.abs(Kj);
+      // M: совпадение ритмов сейчас
+      // M — совпадение, как его воспринимают оба (каждый видит другого с задержкой)
+      const a1 = th[i] - Td(j), a2 = Td(i) - th[j];
+      const c = 0.5 * (Math.cos(a1) + Math.cos(a2)), sn = 0.5 * (Math.sin(a1) + Math.sin(a2));
+      mRe[p] += (c - mRe[p]) * decayM; mIm[p] += (sn - mIm[p]) * decayM;
+      const M = Math.hypot(mRe[p], mIm[p]);
+      // I = ∫ M dt. С трением M может быть отрицательным: ритмы трутся, а не совпадают.
+      // выше границы — от 0 до 1, ниже — от 0 до −1: вес трения не раздувается при строгой границе
+      // у каждого своя широта: одно и то же совпадение одному — опыт, другому — трение
+      const sgn = (m0) => frictionOn ? (M >= m0 ? (M - m0) / (1 - m0) : (M - m0) / Math.max(m0, 0.05)) : M;
+      const si = sgn(M0i[i]), sj = sgn(M0i[j]);
+      I[p] += si * dt; if (I[p] < -I_NEG_CAP) I[p] = -I_NEG_CAP;
+      I[q] += sj * dt; if (I[q] < -I_NEG_CAP) I[q] = -I_NEG_CAP;
+      if (PLAST > 0) {
+        if (si > 0) dWpos[i] += si; else dWneg[i] -= si;
+        if (sj > 0) dWpos[j] += sj; else dWneg[j] -= sj;
+        nbAll[i]++; nbAll[j]++;
+        if (I[p] > 0.5) nbPos[i]++; if (I[q] > 0.5) nbPos[j]++;
+        // что дают: опыт соседа по отношению ко мне
+        if (I[q] > 0.5) nbGive[i]++; if (I[p] > 0.5) nbGive[j]++;
+      }
+      // захват ритмов: держится 3 секунды подряд
+      if (M > 0.93) lockRun[p] += dt; else lockRun[p] = 0;
+      if (lockRun[p] > 3 && !locked[p]) {
+        locked[p] = 1; lockI[p] = 0.5 * (I[p] + I[q]);
+        if (expOn) records.push({ pred: predI[p], meas: lockI[p] });
+      }
+      if (M < 0.6) locked[p] = locked[p] ? 2 : 0;       // 2 = когда-то держались, сейчас нет
+      if (M > 0.93 && locked[p] === 2) locked[p] = 1;
+    }
+  }
+  // ритмы: сильно связанные группы требуют мелкого шага, иначе счёт «взрывается»
+  // (явный Эйлер неустойчив при ΣK·dt > 2). Число подшагов подбирается само.
+  let maxRow = 0;
+  for (let i = 0; i < N; i++) if (rowK[i] > maxRow) maxRow = rowK[i];
+  const nsub = isFinite(maxRow) ? Math.max(1, Math.min(200, Math.ceil(maxRow * dt / 0.3))) : 1;
+  lastSub = nsub;
+  const h = dt / nsub, nzh = Math.sqrt(2 * NOISE * h);
+  for (let k = 0; k < nsub; k++) {
+    dth.fill(0);
+    if (di < 0) {
+      for (let q = 0; q < np; q++) {
+        const i = pI[q], j = pJ[q], sn = Math.sin(th[j] - th[i]);
+        dth[i] += pK[q] * sn; dth[j] -= pK2[q] * sn;
+      }
+    } else {
+      for (let q = 0; q < np; q++) {
+        const i = pI[q], j = pJ[q];
+        dth[i] += pK[q] * Math.sin(Td(j) - th[i]);
+        dth[j] += pK2[q] * Math.sin(Td(i) - th[j]);
+      }
+    }
+    for (let i = 0; i < N; i++) th[i] += (om[i] + dth[i]) * h + nzh * gauss();
+  }
+  const sq = Math.sqrt(dt), vn = U * 0.12;
+  for (let i = 0; i < N; i++) {
+    if (drag && drag.i === i) {
+      vx[i] = (drag.x - x[i]) * 8; vy[i] = (drag.y - y[i]) * 8;
+    } else {
+      vx[i] += (fx[i] - 0.9 * vx[i]) * dt + vn * sq * gauss();
+      vy[i] += (fy[i] - 0.9 * vy[i]) * dt + vn * sq * gauss();
+    }
+    const vm = Math.hypot(vx[i], vy[i]), vmax = U * 1.5;
+    if (vm > vmax) { vx[i] *= vmax / vm; vy[i] *= vmax / vm; }
+    x[i] += vx[i] * dt; y[i] += vy[i] * dt;
+    if (x[i] < LEFTB + RP) { x[i] = LEFTB + RP; vx[i] = Math.abs(vx[i]); }
+    if (x[i] > RIGHTB - RP) { x[i] = RIGHTB - RP; vx[i] = -Math.abs(vx[i]); }
+    if (y[i] < TOPB + RP) { y[i] = TOPB + RP; vy[i] = Math.abs(vy[i]); }
+    if (y[i] > BOTB - RP) { y[i] = BOTB - RP; vy[i] = -Math.abs(vy[i]); }
+  }
+  for (let i = 0; i < N; i++) th[i] = th[i] % 6.283185307;
+  if (PLAST > 0) {
+    for (let i = 0; i < N; i++) {
+      // поддержка зависит от широты (так решила автор теории):
+      // широкий замечает, что ему дают (доля соседей, у которых хороший опыт с ним);
+      // узкий ценит, что ему не мешают (простор: мало соседей рядом).
+      const given = nbAll[i] > 0 ? nbGive[i] / nbAll[i] : 0;
+      const space = 1 / (1 + nbAll[i] / 3);
+      const sup = tolI[i] * given + (1 - tolI[i]) * space;
+      support[i] += (sup - support[i]) * Math.min(1, dt / 5);
+      // шанс переработать трение: шире и при поддержке — выше
+      const pProc = Math.min(1, Math.max(0, 0.15 + 0.6 * tolI[i] + 0.5 * support[i] - 0.25));
+      const dw = PLAST * dt * (LW_GROW * dWpos[i] + (pProc * LW_LEARN - (1 - pProc) * LW_CLOSE) * dWneg[i]) - wDyn[i] * LW_DECAY * dt;
+      const base = TOL + SPREAD * baseTol[i] + (isVol[i] ? VOL_AMP * volZ[i] : 0);
+      wDyn[i] = Math.min(1 - base, Math.max(-base, wDyn[i] + dw));
+    }
+    applyWidths();
+  }
+  if (VOLFRAC > 0) {
+    const a = dt / VOL_TAU, b = Math.sqrt(2 * dt / VOL_TAU);
+    for (let i = 0; i < N; i++) if (isVol[i]) volZ[i] += -volZ[i] * a + b * gauss();
+    applyWidths();
+  }
+  // страховка: если где-то появилось нечисло (NaN), оно заразило бы всех соседей.
+  // Чиним точечно и считаем, чтобы было видно, где и когда это случилось.
+  for (let i = 0; i < N; i++) {
+    // широта тоже может сломаться — и тогда сбой повторялся бы каждый шаг (частица «замирает»)
+    if (!isFinite(wDyn[i]) || !isFinite(support[i]) || !isFinite(volZ[i]) || !isFinite(tolI[i]) || !isFinite(M0i[i])) {
+      if (!repairs.first) { repairs.first = L(`частица ${i}: широта, ${fmtT(simT)}`, `particle ${i}: width, ${fmtT(simT)}`); repairs.diag = diagSnapshot(i); }
+      if (!isFinite(wDyn[i])) wDyn[i] = 0; if (!isFinite(support[i])) support[i] = 0; if (!isFinite(volZ[i])) volZ[i] = 0;
+      applyWidths(); repairs.n++;
+    }
+    if (!isFinite(th[i]) || !isFinite(x[i]) || !isFinite(y[i]) || !isFinite(vx[i]) || !isFinite(vy[i])) {
+      if (!repairs.first) { repairs.first = L(`частица ${i}: ${!isFinite(th[i]) ? 'ритм' : 'положение'}, ${fmtT(simT)}`, `particle ${i}: ${!isFinite(th[i]) ? 'rhythm' : 'position'}, ${fmtT(simT)}`); repairs.diag = diagSnapshot(i); }
+      th[i] = Math.random() * 6.2832; vx[i] = 0; vy[i] = 0;
+      if (!isFinite(x[i])) x[i] = (LEFTB + RIGHTB) / 2; if (!isFinite(y[i])) y[i] = (TOPB + BOTB) / 2;
+      repairs.n++;
+    }
+  }
+  if (repairs.scanAt <= simT) {
+    repairs.scanAt = simT + 1;
+    for (let p = 0; p < NN; p++) if (!isFinite(I[p]) || !isFinite(mRe[p]) || !isFinite(mIm[p])) {
+      if (!repairs.first) repairs.first = L(`опыт пары ${Math.floor(p / N)}–${p % N}, ${fmtT(simT)}`, `experience of pair ${Math.floor(p / N)}–${p % N}, ${fmtT(simT)}`);
+      I[p] = 0; mRe[p] = 0; mIm[p] = 0; repairs.n++;
+    }
+  }
+  // история для задержки — записываем ПОСЛЕ страховки, чтобы в прошлое не попадали нечисла
+  hHead = (hHead + 1) % HIST;
+  const o = hHead * N;
+  for (let i = 0; i < N; i++) { hx[o + i] = x[i]; hy[o + i] = y[i]; hth[o + i] = th[i]; }
+  if (hFill < HIST - 1) hFill++;
+  simT += dt;
+}
+const repairs = { n: 0, first: '', scanAt: 0, diag: null };
+// снимок в момент первого сбоя — чтобы найти причину
+function diagSnapshot(i) {
+  let maxI = 0, minI = 0, badI = 0; for (let p = 0; p < NN; p++) { if (!isFinite(I[p])) badI++; else { if (I[p] > maxI) maxI = I[p]; if (I[p] < minI) minI = I[p]; } }
+  return { i, simT: +simT.toFixed(2), th: String(th[i]), x: String(x[i]), vx: String(vx[i]), wDyn: String(wDyn[i]), tol: String(tolI[i]), support: String(support[i]),
+    lastSub, maxI: +maxI.toFixed(1), minI: +minI.toFixed(1), badI, TAU, NOISE, TOL, SPREAD, VOLFRAC, PLAST, U: +U.toFixed(1), di: delayedIndex(), hFill, dragging: drag ? drag.i : -1 };
+}
+// ---------- запись для Claude: последние 3 модельные минуты, кадр в секунду ----------
+// каждый кадр — строка: для каждой частицы x, y (0..999 по полю), группа, широта (0..99), по 2 символа base36
+const REC_MAX = 180;
+let rec = [], recNext = 0;
+const b36 = v => { v = Math.max(0, Math.min(1295, Math.round(v))); return v.toString(36).padStart(2, '0'); };
+function recordFrame(mol) {
+  if (simT < recNext) return;
+  recNext = simT + 1;
+  let f = '';
+  for (let i = 0; i < N; i++) {
+    const inM = (mol.sizes.get(comp[i]) || 1) >= 2;
+    f += b36((x[i] - LEFTB) / Math.max(1, RIGHTB - LEFTB) * 999) + b36((y[i] - TOPB) / Math.max(1, BOTB - TOPB) * 999) + b36(inM ? comp[i] : 99) + b36(tolI[i] * 99);
+  }
+  rec.push({ t: +simT.toFixed(1), f, drag: drag ? drag.i : -1 });
+  if (rec.length > REC_MAX) rec.shift();
+}
+// диагностика замерших: частица, которая 10 модельных секунд почти не сдвинулась
+const frz = { ax: new Float32Array(90), ay: new Float32Array(90), at: new Float32Array(90), flag: new Uint8Array(90), nextAt: 0, report: '' };
+function checkFrozen() {
+  if (simT < frz.nextAt) return;
+  frz.nextAt = simT + 1;
+  let first = -1, count = 0;
+  for (let i = 0; i < N; i++) {
+    const d = Math.hypot(x[i] - frz.ax[i], y[i] - frz.ay[i]);
+    if (d > U * 0.015) { frz.ax[i] = x[i]; frz.ay[i] = y[i]; frz.at[i] = simT; frz.flag[i] = 0; continue; }
+    if (simT - frz.at[i] > 10) { frz.flag[i] = 1; count++; if (first < 0) first = i; }
+  }
+  if (first >= 0) {
+    const i = first; let nb = 0, av = 0, at = 0;
+    for (let j = 0; j < N; j++) if (j !== i && Math.hypot(x[j] - x[i], y[j] - y[i]) < RBOND) { nb++; if (I[i * N + j] < -0.5) av++; else if (I[i * N + j] > 0.5) at++; }
+    frz.report = L(`Замерших: ${count} (частица ${i}: стоит ${Math.round(simT - frz.at[i])} с, широта ${tolI[i].toFixed(2)}, соседей ${nb}, избегает ${av}, тянется к ${at}, скорость ${(Math.hypot(vx[i], vy[i]) / U).toFixed(3)}, держит палец: ${drag && drag.i === i ? 'да' : 'нет'}).`,
+      `Frozen: ${count} (particle ${i}: still for ${Math.round(simT - frz.at[i])} s, width ${tolI[i].toFixed(2)}, neighbours ${nb}, avoids ${av}, drawn to ${at}, speed ${(Math.hypot(vx[i], vy[i]) / U).toFixed(3)}, held by finger: ${drag && drag.i === i ? 'yes' : 'no'}).`);
+  } else frz.report = '';
+}
+
+// ---------- молекулы: связные группы по захваченным парам, которые рядом ----------
+function findMolecules() {
+  for (let i = 0; i < N; i++) comp[i] = i;
+  const find = a => { while (comp[a] !== a) { comp[a] = comp[comp[a]]; a = comp[a]; } return a; };
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+    const p = i * N + j;
+    if (locked[p] === 1 && near[p]) { const a = find(i), b = find(j); if (a !== b) comp[a] = b; }
+  }
+  const sizes = new Map();
+  for (let i = 0; i < N; i++) { const r = find(i); comp[i] = r; sizes.set(r, (sizes.get(r) || 0) + 1); }
+  let mols = 0, biggest = 1, inMol = 0;
+  for (const s of sizes.values()) if (s >= 2) { mols++; inMol += s; if (s > biggest) biggest = s; }
+  return { mols, biggest, inMol, sizes };
+}
+
+// ---------- проверка порога ----------
+function thresholdCheck() {
+  // пары, совпавшие ритмами при ОТРИЦАТЕЛЬНОМ опыте: их помирила группа
+  const reconciled = records.filter(r => r.meas < 0).length;
+  const pts = records.filter(r => r.pred > 1 && r.meas >= 0);
+  if (pts.length < 3) return { n: pts.length, ratio: null, mediated: 0, reconciled };
+  let mediated = 0, lr = 0;
+  for (const r of pts) { if (r.meas < 0.6 * r.pred) mediated++; lr += Math.log((r.meas + 1) / (r.pred + 1)); }
+  return { n: pts.length, ratio: Math.exp(lr / pts.length), mediated, reconciled };
+}
+
+// ---------- изображение ----------
+function hue(t) { return ((t % 6.2832) + 6.2832) % 6.2832 / 6.2832 * 360; }
+// ---------- история одной пары ----------
+let track = null;
+function fmtT(t) { const m = Math.floor(t / 60), s2 = Math.floor(t % 60); return `${m}:${String(s2).padStart(2, '0')}`; }
+function startTrack() {
+  let a = Math.floor(Math.random() * N), b = Math.floor(Math.random() * (N - 1));
+  if (b >= a) b++;
+  if (a > b) [a, b] = [b, a];
+  track = { a, b, series: [], log: [], nextS: simT, st: null, met: I[a * N + b] > 0.5 };
+  const dw = Math.abs(om[a] - om[b]);
+  document.getElementById('pairTitle').textContent =
+    L(`История пары: разница природ ${dw.toFixed(2)} — вдвоём сойтись им нужно I ≈ ${predI[a * N + b].toFixed(0)}`, `Pair history: difference of natures ${dw.toFixed(2)} — alone they would need I ≈ ${predI[a * N + b].toFixed(0)} to lock`);
+  addLog(L(`начали следить; опыт у них уже ${I[a * N + b].toFixed(1)}`, `tracking started; their experience is ${I[a * N + b].toFixed(1)}`));
+}
+function addLog(text) { track.log.unshift(`<b>${fmtT(simT)}</b> ${text}`); if (track.log.length > 30) track.log.pop(); }
+function sampleTrack(mol) {
+  if (!track || simT < track.nextS) return;
+  track.nextS = simT + 0.25;
+  const { a, b } = track, p = a * N + b;
+  const d = Math.hypot(x[a] - x[b], y[a] - y[b]) / U;
+  const M = Math.hypot(mRe[p], mIm[p]);
+  const same = comp[a] === comp[b] && (mol.sizes.get(comp[a]) || 1) >= 2;
+  const inA = (mol.sizes.get(comp[a]) || 1) >= 2, inB = (mol.sizes.get(comp[b]) || 1) >= 2;
+  const pr = track.st;
+  // рядом/разошлись — с запасом, чтобы не мигало на границе
+  const nearNow = pr ? (pr.near ? d * U < RINT * 1.7 : d * U < RINT) : d * U < RINT;
+  const q = b * N + a;
+  const raw = { near: nearNow, lock: locked[p] === 1, same, inA, inB, neg: 0.5 * (I[p] + I[q]) < -1, oneSided: (I[p] > 1 && I[q] < -1) || (I[q] > 1 && I[p] < -1) };
+  // событие засчитывается, только если новое состояние продержалось 2 секунды
+  const cur = pr ? { ...pr } : { ...raw };
+  track.pend = track.pend || {};
+  for (const k in raw) {
+    if (!pr || raw[k] === pr[k]) { delete track.pend[k]; continue; }
+    if (track.pend[k] === undefined) track.pend[k] = simT;
+    if (simT - track.pend[k] >= 2) { cur[k] = raw[k]; delete track.pend[k]; }
+  }
+  if (pr && (cur.near !== pr.near || cur.lock !== pr.lock || cur.same !== pr.same || cur.inA !== pr.inA || cur.inB !== pr.inB || cur.neg !== pr.neg || cur.oneSided !== pr.oneSided)) {
+    if (cur.near && !pr.near) { addLog(track.met ? L('снова рядом', 'close again') : L('встретились впервые', 'met for the first time')); track.met = true; }
+    if (!cur.near && pr.near) addLog(L('разошлись', 'drifted apart'));
+    if (cur.neg && !pr.neg) addLog(L('опыт ушёл в минус — трение', 'experience turned negative — friction'));
+    if (!cur.neg && pr.neg) addLog(L('опыт снова положительный', 'experience positive again'));
+    if (cur.oneSided && !pr.oneSided) addLog(I[p] > 0 ? L('неразделённое: первой это опыт, второй трение', 'one-sided: experience for the first, friction for the second') : L('неразделённое: второй это опыт, первой трение', 'one-sided: experience for the second, friction for the first'));
+    if (!cur.oneSided && pr.oneSided) addLog(L('опыт снова в одну сторону', 'experience agrees again'));
+    if (cur.lock && !pr.lock) addLog(L(`ритмы совпали, опыт ${I[p].toFixed(0)} и ${I[q].toFixed(0)}`, `rhythms locked, experience ${I[p].toFixed(0)} and ${I[q].toFixed(0)}`));
+    if (!cur.lock && pr.lock) addLog(L('ритмы разошлись', 'rhythms unlocked'));
+    if (cur.same && !pr.same) addLog(L(`в одной группе из ${mol.sizes.get(comp[a])}`, `in the same group of ${mol.sizes.get(comp[a])}`));
+    if (!cur.same && pr.same) addLog(L('больше не в одной группе', 'no longer in the same group'));
+    if (!cur.same) {
+      if (cur.inA && !pr.inA) addLog(L(`первая вошла в группу из ${mol.sizes.get(comp[a])}, без второй`, `the first joined a group of ${mol.sizes.get(comp[a])} without the second`));
+      if (cur.inB && !pr.inB) addLog(L(`вторая вошла в группу из ${mol.sizes.get(comp[b])}, без первой`, `the second joined a group of ${mol.sizes.get(comp[b])} without the first`));
+    }
+  }
+  track.st = cur;
+  // M измеряется только когда они рядом; вдали — пропуск, а не застывшее старое значение
+  track.series.push({ t: simT, I: I[p], I2: I[q], M: near[p] ? M : null, d });
+  if (track.series.length > 1200) track.series.shift();
+}
+const pc = document.getElementById('pairChart'), pcx = pc.getContext('2d');
+function drawTrack() {
+  if (!track) return;
+  const r = pc.getBoundingClientRect();
+  const w = Math.max(100, r.width), h = 90;
+  if (pc.width !== Math.round(w * DPR)) { pc.width = Math.round(w * DPR); pc.height = Math.round(h * DPR); }
+  pcx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  pcx.clearRect(0, 0, w, h);
+  const S = track.series; if (S.length < 2) return;
+  const t0 = S[0].t, t1 = S[S.length - 1].t, span = Math.max(1, t1 - t0);
+  let Imax = 1; for (const q of S) Imax = Math.max(Imax, Math.abs(q.I), Math.abs(q.I2 || 0));
+  const hasNeg = S.some(q => q.I < 0 || q.I2 < 0);
+  const X = t => (t - t0) / span * (w - 2) + 1;
+  const line = (col, f) => {
+    pcx.strokeStyle = col; pcx.lineWidth = 1.6; pcx.beginPath();
+    let pen = false;
+    S.forEach(q => {
+      const v = f(q);
+      if (v === null) { pen = false; return; }
+      const yy = h - 4 - v * (h - 8);
+      if (pen) pcx.lineTo(X(q.t), yy); else pcx.moveTo(X(q.t), yy);
+      pen = true;
+    });
+    pcx.stroke();
+  };
+  line('#6f8fb8', q => Math.min(1, q.d / 1.2));
+  line('#efe6d6', q => q.M);
+  if (hasNeg) {
+    pcx.strokeStyle = 'rgba(201,208,218,0.25)'; pcx.lineWidth = 1; pcx.setLineDash([3, 4]);
+    pcx.beginPath(); pcx.moveTo(0, h / 2); pcx.lineTo(w, h / 2); pcx.stroke(); pcx.setLineDash([]);
+    line('#9c7b3e', q => 0.5 + 0.5 * q.I2 / Imax);
+    line('#d9b86c', q => 0.5 + 0.5 * q.I / Imax);
+  } else { line('#9c7b3e', q => q.I2 / Imax); line('#d9b86c', q => q.I / Imax); }
+  document.getElementById('pairLog').innerHTML = track.log.slice(0, 3).map(l => `<li>${l}</li>`).join('');
+}
+
+function draw(mol) {
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg') || '#141a24';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(201,208,218,0.08)'; ctx.lineWidth = 1;
+  ctx.strokeRect(LEFTB + 0.5, TOPB + 0.5, RIGHTB - LEFTB - 1, BOTB - TOPB - 1);
+  // связи: толщина — накопленный опыт, яркость — совпадение сейчас
+  ctx.lineCap = 'round';
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+    const p = i * N + j, q = j * N + i;
+    if (!near[p]) continue;
+    const ea = I[p], eb = I[q], e = 0.5 * (ea + eb);
+    // неразделённое: одному это опыт, другому трение — сиреневый пунктир
+    if ((ea > 0.5 && eb < -0.5) || (eb > 0.5 && ea < -0.5)) {
+      ctx.strokeStyle = 'rgba(180,138,214,0.55)'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(x[i], y[i]); ctx.lineTo(x[j], y[j]); ctx.stroke();
+      ctx.setLineDash([]);
+      continue;
+    }
+    if (e < -0.5) {
+      ctx.strokeStyle = `rgba(214,110,96,${Math.min(0.55, 0.1 + (-e) / 60).toFixed(3)})`;
+      ctx.lineWidth = 1; ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(x[i], y[i]); ctx.lineTo(x[j], y[j]); ctx.stroke();
+      ctx.setLineDash([]);
+      continue;
+    }
+    if (e < 0.5) continue;
+    const M = Math.hypot(mRe[p], mIm[p]);
+    const w = Math.min(4, 0.4 + Math.log1p(e) * 0.7);
+    ctx.strokeStyle = `rgba(239,230,214,${(0.08 + 0.55 * M * M).toFixed(3)})`;
+    ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(x[i], y[i]); ctx.lineTo(x[j], y[j]); ctx.stroke();
+  }
+  // частицы: цвет — фаза ритма; у членов молекулы — золотой ободок
+  if (track) {
+    const { a, b } = track;
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.moveTo(x[a], y[a]); ctx.lineTo(x[b], y[b]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  for (let i = 0; i < N; i++) {
+    const inMol = (mol.sizes.get(comp[i]) || 1) >= 2;
+    const focus = !track || i === track.a || i === track.b;
+    ctx.globalAlpha = focus ? 1 : 0.3;
+    if (SPREAD > 0 || VOLFRAC > 0) {
+      // широта: тусклый ореол, чем шире — тем больше
+      ctx.fillStyle = 'rgba(201,208,218,0.07)';
+      ctx.beginPath(); ctx.arc(x[i], y[i], RP + 2 + 10 * tolI[i], 0, 6.2832); ctx.fill();
+    }
+    if (VOLFRAC > 0 && isVol[i]) {
+      // непостоянная: пунктирное кольцо, его размер дышит вместе с широтой
+      ctx.strokeStyle = 'rgba(201,208,218,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(x[i], y[i], RP + 2 + 10 * tolI[i], 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.fillStyle = `hsl(${hue(th[i]).toFixed(0)}, 55%, 66%)`;
+    ctx.beginPath(); ctx.arc(x[i], y[i], RP, 0, 6.2832); ctx.fill();
+    if (inMol) {
+      ctx.strokeStyle = 'rgba(217,184,108,0.9)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(x[i], y[i], RP + 3, 0, 6.2832); ctx.stroke();
+    }
+    if (track && (i === track.a || i === track.b)) {
+      ctx.globalAlpha = 1; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x[i], y[i], RP + 6, 0, 6.2832); ctx.stroke();
+    }
+  }
+  // замершие — маленький белый крестик
+  for (let i = 0; i < N; i++) if (frz.flag[i]) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x[i] - 4, y[i] - 4); ctx.lineTo(x[i] + 4, y[i] + 4); ctx.moveTo(x[i] + 4, y[i] - 4); ctx.lineTo(x[i] - 4, y[i] + 4); ctx.stroke();
+  }
+  // частица, которую держит палец, — видно белым кольцом
+  if (drag) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.arc(x[drag.i], y[drag.i], RP + 9, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.globalAlpha = 1;
+}
+
+const plot = document.getElementById('plot'), pctx = plot.getContext('2d');
+function drawPlot() {
+  const S = plot.width, pad = 14;
+  pctx.clearRect(0, 0, S, S);
+  const pts = records.filter(r => r.pred > 0);
+  let mx = 20;
+  for (const r of pts) mx = Math.max(mx, r.pred, r.meas);
+  mx = Math.min(mx * 1.05, 200);
+  const X = v => pad + (Math.min(v, mx) / mx) * (S - 2 * pad);
+  const Y = v => S - pad - (Math.max(0, Math.min(v, mx)) / mx) * (S - 2 * pad);
+  pctx.strokeStyle = 'rgba(201,208,218,0.25)'; pctx.lineWidth = 2;
+  pctx.strokeRect(pad, pad, S - 2 * pad, S - 2 * pad);
+  pctx.setLineDash([6, 6]);
+  pctx.beginPath(); pctx.moveTo(X(0), Y(0)); pctx.lineTo(X(mx), Y(mx)); pctx.stroke();
+  pctx.setLineDash([]);
+  for (const r of pts) {
+    pctx.fillStyle = r.meas < 0 ? 'rgba(214,110,96,0.95)' : r.meas < 0.6 * r.pred ? 'rgba(217,184,108,0.95)' : 'rgba(201,208,218,0.8)';
+    pctx.beginPath(); pctx.arc(X(r.pred), Y(r.meas), 4, 0, 6.2832); pctx.fill();
+  }
+}
+
+const statsEl = document.getElementById('stats');
+// общий такт крупнейшей группы: как быстро вращается её средняя фаза
+let pulseW = null, pulsePrev = null, pulseT = 0;
+function measurePulse(mol) {
+  let big = -1, bs = 0;
+  for (const [r, sz] of mol.sizes) if (sz > bs) { bs = sz; big = r; }
+  if (bs < 2) { pulsePrev = null; pulseW = null; return; }
+  let re = 0, im = 0;
+  for (let i = 0; i < N; i++) if (comp[i] === big) { re += Math.cos(th[i]); im += Math.sin(th[i]); }
+  const a = Math.atan2(im, re);
+  if (pulsePrev !== null && simT > pulseT) {
+    let d = a - pulsePrev; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+    const w = d / (simT - pulseT);
+    pulseW = pulseW === null ? w : pulseW + (w - pulseW) * 0.3;
+  }
+  pulsePrev = a; pulseT = simT;
+}
+
+// широкие против узких: половины по медиане широты
+function volStats(mol) {
+  const deg = i => { let d = 0; for (let j = 0; j < N; j++) if (j !== i) { const p = i < j ? i * N + j : j * N + i; if (locked[p] === 1 && near[p]) d++; } return d; };
+  let vN = 0, vIn = 0, vD = 0, sN = 0, sIn = 0, sD = 0;
+  for (let i = 0; i < N; i++) {
+    const inM = (mol.sizes.get(comp[i]) || 1) >= 2 ? 1 : 0, d = deg(i);
+    if (isVol[i]) { vN++; vIn += inM; vD += d; } else { sN++; sIn += inM; sD += d; }
+  }
+  return { volIn: vN ? Math.round(100 * vIn / vN) : 0, volDeg: vN ? (vD / vN).toFixed(1) : '0', stIn: sN ? Math.round(100 * sIn / sN) : 0, stDeg: sN ? (sD / sN).toFixed(1) : '0' };
+}
+function widthStats(mol) {
+  const idx = [...Array(N).keys()].sort((a, b) => tolI[a] - tolI[b]);
+  const narrow = idx.slice(0, N / 2), wide = idx.slice(N / 2);
+  const deg = i => { let d = 0; for (let j = 0; j < N; j++) if (j !== i) { const p = i < j ? i * N + j : j * N + i; if (locked[p] === 1 && near[p]) d++; } return d; };
+  const part = g => {
+    let inM = 0, dg = 0;
+    for (const i of g) { if ((mol.sizes.get(comp[i]) || 1) >= 2) inM++; dg += deg(i); }
+    return [Math.round(100 * inM / g.length), (dg / g.length).toFixed(1)];
+  };
+  const [wideIn, wideDeg] = part(wide), [narrowIn, narrowDeg] = part(narrow);
+  return { wideIn, wideDeg, narrowIn, narrowDeg };
+}
+
+function updateStats(mol) {
+  const tc = thresholdCheck();
+  let pairs = 0, totalI = 0;
+  let neg = 0, alone = 0;
+  let oneSided = 0;
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+    const a = I[i * N + j], b = I[j * N + i], e = 0.5 * (a + b);
+    if (e > 0) { pairs++; totalI += e; } else if (e < -0.5) neg++;
+    if ((a > 0.5 && b < -0.5) || (b > 0.5 && a < -0.5)) oneSided++;
+  }
+  for (let i = 0; i < N; i++) if ((mol.sizes.get(comp[i]) || 1) < 2) alone++;
+  const mm = Math.floor(simT / 60), ss = Math.floor(simT % 60);
+  let line = L(`<b>${mm}:${String(ss).padStart(2, '0')}</b> прожито. Пар с опытом: <b>${pairs}</b>` + (frictionOn ? `, с трением: <b>${neg}</b>` : '') + `. Одиночек: <b>${alone}</b>. ` +
+    `Молекул: <b>${mol.mols}</b>, в них <b>${mol.inMol}</b> из ${N}, крупнейшая — <b>${mol.biggest}</b>.`,
+    `<b>${mm}:${String(ss).padStart(2, '0')}</b> elapsed. Pairs with experience: <b>${pairs}</b>` + (frictionOn ? `, with friction: <b>${neg}</b>` : '') + `. Alone: <b>${alone}</b>. ` +
+    `Molecules: <b>${mol.mols}</b>, holding <b>${mol.inMol}</b> of ${N}, largest — <b>${mol.biggest}</b>.`);
+  if (mol.mols > 0 && pulseW !== null) line += L(` Общий такт крупнейшей: <b>${pulseW.toFixed(2)}</b> (свой у частиц около ${OMEGA0}).`, ` Common pulse of the largest: <b>${pulseW.toFixed(2)}</b> (particles' own ≈ ${OMEGA0}).`);
+  {
+    // плотность: сколько соседей рядом (в досягаемости подстройки) в среднем у частицы
+    let nearPairs = 0; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) if (near[i * N + j]) nearPairs++;
+    const uniform = N * Math.PI * RINT * RINT / ((RIGHTB - LEFTB) * (BOTB - TOPB));
+    line += L(` Рядом с частицей в среднем <b>${(2 * nearPairs / N).toFixed(1)}</b> соседей (если бы все были рассыпаны ровно — ${uniform.toFixed(1)}).`, ` Neighbours within reach on average: <b>${(2 * nearPairs / N).toFixed(1)}</b> (uniform scattering would give ${uniform.toFixed(1)}).`);
+  }
+  if (TAU > 0) line += L(` Время реакции <b>${TAU.toFixed(1)} с</b>.`, ` Response delay <b>${TAU.toFixed(1)} s</b>.`);
+  if (frictionOn && oneSided > 0) line += L(` Неразделённых (одному опыт, другому трение): <b>${oneSided}</b>.`, ` One-sided (experience for one, friction for the other): <b>${oneSided}</b>.`);
+  if (PLAST > 0) {
+    let opened = 0, closed = 0;
+    for (let i = 0; i < N; i++) { const d = tolI[i] - tol0[i]; if (d > 0.15) opened++; else if (d < -0.15) closed++; }
+    const avg = a => (a.reduce((s2, v) => s2 + v, 0) / N).toFixed(2);
+    line += L(` Живая широта: раскрылись <b>${opened}</b>, закрылись <b>${closed}</b>; средняя широта ${avg(tol0)} → <b>${avg(tolI)}</b>.`, ` Living width: opened <b>${opened}</b>, closed <b>${closed}</b>; mean width ${avg(tol0)} → <b>${avg(tolI)}</b>.`);
+  }
+  if (VOLFRAC > 0 && VOLFRAC < 1) {
+    const vs = volStats(mol);
+    line += L(` Непостоянные: в группах <b>${vs.volIn}%</b>, связей <b>${vs.volDeg}</b>; стабильные: в группах <b>${vs.stIn}%</b>, связей <b>${vs.stDeg}</b>.`, ` Volatile: in groups <b>${vs.volIn}%</b>, bonds <b>${vs.volDeg}</b>; stable: in groups <b>${vs.stIn}%</b>, bonds <b>${vs.stDeg}</b>.`);
+  }
+  if (SPREAD > 0) {
+    const ws = widthStats(mol);
+    line += L(` Широкие: в группах <b>${ws.wideIn}%</b>, связей в среднем <b>${ws.wideDeg}</b>; узкие: в группах <b>${ws.narrowIn}%</b>, связей <b>${ws.narrowDeg}</b>.`, ` Wide: in groups <b>${ws.wideIn}%</b>, bonds on average <b>${ws.wideDeg}</b>; narrow: in groups <b>${ws.narrowIn}%</b>, bonds <b>${ws.narrowDeg}</b>.`);
+  }
+  if (!expOn) line += L(' Опыт не влияет на связь — это контроль.', ' Experience does not affect coupling — this is the control.');
+  else if (tc.ratio !== null) line += L(` Захватов с предсказанием: <b>${tc.n}</b>; измеренный порог в среднем ×${tc.ratio.toFixed(2)} от предсказанного, группа «подтянула» <b>${tc.mediated}</b>.`, ` Locks with a prediction: <b>${tc.n}</b>; measured threshold on average ×${tc.ratio.toFixed(2)} of predicted; pulled in by a group: <b>${tc.mediated}</b>.`);
+  if (expOn && tc.reconciled > 0) line += L(` Совпали ритмами, несмотря на трение между ними: <b>${tc.reconciled}</b>.`, ` Locked despite friction between them: <b>${tc.reconciled}</b>.`);
+  if (frz.report) line += ` <b>${frz.report}</b>`;
+  if (repairs.n > 0) line += L(` <b>Сбоев счёта исправлено: ${repairs.n}</b> (первый — ${repairs.first}).`, ` <b>Computation failures repaired: ${repairs.n}</b> (first — ${repairs.first}).`);
+  statsEl.innerHTML = line;
+}
+
+// ---------- взаимодействие ----------
+canvas.addEventListener('pointerdown', e => {
+  let best = -1, bd = (U * 0.08) ** 2;
+  for (let i = 0; i < N; i++) { const d = (x[i] - e.clientX) ** 2 + (y[i] - e.clientY) ** 2; if (d < bd) { bd = d; best = i; } }
+  if (best >= 0) { drag = { i: best, x: e.clientX, y: e.clientY, last: performance.now() }; try { canvas.setPointerCapture(e.pointerId); } catch (_) {} }
+});
+canvas.addEventListener('pointermove', e => { if (drag) { drag.x = e.clientX; drag.y = e.clientY; drag.last = performance.now(); } });
+const endDrag = () => { drag = null; };
+canvas.addEventListener('pointerup', endDrag);
+canvas.addEventListener('pointercancel', endDrag);
+// палец мог отпустить экран вне поля (над текстом или кнопками) — тогда поле этого не узнаёт,
+// и частица «держалась» невидимым пальцем. Ловим отпускание везде и страхуемся тайм-аутом.
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', endDrag);
+canvas.addEventListener('lostpointercapture', endDrag);
+window.addEventListener('blur', endDrag);
+document.addEventListener('visibilitychange', endDrag);
+
+document.getElementById('fric').addEventListener('click', e => {
+  frictionOn = !frictionOn; e.currentTarget.setAttribute('aria-pressed', frictionOn ? 'true' : 'false');
+  e.currentTarget.textContent = frictionOn ? L('Трение есть', 'Friction on') : L('Трения нет', 'Friction off');
+  reset();
+});
+document.getElementById('exp').addEventListener('click', e => {
+  expOn = !expOn; e.currentTarget.setAttribute('aria-pressed', expOn ? 'true' : 'false');
+  e.currentTarget.textContent = expOn ? L('Опыт копится', 'Experience counts') : L('Опыт не влияет', 'Experience ignored');
+  reset();
+});
+document.getElementById('sigma').addEventListener('input', e => { SIGMA = parseFloat(e.target.value); reset(); });
+document.getElementById('noise').addEventListener('input', e => { NOISE = parseFloat(e.target.value); });
+document.getElementById('spread').addEventListener('input', e => {
+  SPREAD = parseFloat(e.target.value); applyWidths();
+  document.getElementById('spreadVal').textContent = SPREAD.toFixed(2).replace(/0$/, '').replace(/\.$/, '');
+});
+document.getElementById('plast').addEventListener('input', e => {
+  PLAST = parseFloat(e.target.value);
+  if (PLAST > 0) for (let i = 0; i < N; i++) tol0[i] = tolI[i];   // точка отсчёта — момент включения
+  document.getElementById('plastVal').textContent = PLAST > 0 ? '×' + PLAST : L('нет', 'off');
+});
+document.getElementById('vol').addEventListener('input', e => {
+  VOLFRAC = parseFloat(e.target.value); applyWidths();
+  document.getElementById('volVal').textContent = Math.round(VOLFRAC * 100) + '%';
+});
+// терпимость меняется на ходу: можно посмотреть, как один и тот же мир становится мягче или жёстче
+document.getElementById('tol').addEventListener('input', e => {
+  TOL = parseFloat(e.target.value); M0 = 0.85 - 0.7 * TOL; applyWidths();
+  document.getElementById('tolVal').textContent = TOL.toFixed(2).replace(/0$/, '');
+});
+// меняется на ходу, без перезапуска: можно взять сложившуюся группу и замедлить отклик
+document.getElementById('tau').addEventListener('input', e => {
+  TAU = parseFloat(e.target.value);
+  document.getElementById('tauVal').textContent = TAU.toFixed(1).replace('.0', '') + L(' с', ' s');
+});
+document.getElementById('speed').addEventListener('click', e => {
+  speed = speed === 1 ? 4 : 1; e.currentTarget.setAttribute('aria-pressed', speed > 1 ? 'true' : 'false');
+});
+document.getElementById('reset').addEventListener('click', reset);
+document.getElementById('pairBtn').addEventListener('click', e => {
+  const wrap = document.getElementById('pairWrap');
+  if (!track) { startTrack(); wrap.hidden = false; e.currentTarget.textContent = L('Другая пара', 'Another pair'); e.currentTarget.setAttribute('aria-pressed', 'true'); }
+  else { startTrack(); }
+  document.documentElement.style.setProperty('--footH', document.querySelector('footer').offsetHeight + 'px');
+});
+document.getElementById('plotBtn').addEventListener('click', e => {
+  const w = document.getElementById('plotWrap'); w.hidden = !w.hidden;
+  e.currentTarget.setAttribute('aria-pressed', w.hidden ? 'false' : 'true');
+});
+
+// ---------- статистику можно развернуть; свёрнутая не отнимает поле ----------
+document.getElementById('statsBtn').addEventListener('click', e => {
+  const st2 = document.getElementById('stats'); const short = st2.classList.toggle('short');
+  e.currentTarget.textContent = short ? L('Вся статистика', 'All statistics') : L('Свернуть статистику', 'Collapse statistics');
+  e.currentTarget.setAttribute('aria-expanded', short ? 'false' : 'true');
+  requestAnimationFrame(bounds);
+});
+
+// ---------- панель настроек можно свернуть, поле тогда больше ----------
+document.getElementById('toggleCtl').addEventListener('click', e => {
+  const ft = document.querySelector('footer'); const c = ft.classList.toggle('collapsed');
+  e.currentTarget.textContent = c ? L('Показать настройки', 'Show controls') : L('Скрыть настройки', 'Hide controls');
+  e.currentTarget.setAttribute('aria-expanded', c ? 'false' : 'true');
+  requestAnimationFrame(bounds);
+});
+// граница поля следит за размером панели и шапки
+if (typeof ResizeObserver !== 'undefined') {
+  const ro = new ResizeObserver(() => bounds());
+  ro.observe(document.querySelector('footer')); ro.observe(document.querySelector('header'));
+}
+
+// ---------- журнал действий: что и когда меняла автор ----------
+let actions = [];
+function logAction(what) { actions.push({ t: +simT.toFixed(1), what }); if (actions.length > 400) actions.shift(); }
+const NAMES = { sigma: 'разнородность', noise: 'шум', tol: 'терпимость', spread: 'разброс широты', vol: 'непостоянных', plast: 'живая широта', tau: 'время реакции' };
+for (const id in NAMES) document.getElementById(id).addEventListener('change', e => logAction(`${NAMES[id]} = ${e.target.value}`));
+['exp', 'fric', 'speed', 'reset'].forEach(id => document.getElementById(id).addEventListener('click', e => logAction(`кнопка «${e.currentTarget.textContent.trim()}»`)));
+canvas.addEventListener('pointerdown', () => { if (drag) logAction(`взяла частицу ${drag.i}`); });
+
+// ---------- сохранение мира: чтобы после отправки можно было вернуться туда же ----------
+const SAVE_KEY = 'relLabWorld_v1';
+const f32 = a => { const u = new Uint8Array(a.buffer, a.byteOffset, a.byteLength); let s2 = ''; for (let k = 0; k < u.length; k += 8192) s2 += String.fromCharCode.apply(null, u.subarray(k, k + 8192)); return btoa(s2); };
+const unf = (str, T) => { const b = atob(str); const u = new Uint8Array(b.length); for (let k = 0; k < b.length; k++) u[k] = b.charCodeAt(k); return new T(u.buffer); };
+const SAVED = { x, y, vx, vy, th, om, baseOm, baseTol, volZ, volRank, wDyn, support, tol0, I, mRe, mIm, lockRun, lockI, predI, locked, near, hx, hy, hth };
+// пока автор не решила, продолжать ли старый мир, новый его не затирает
+let saveArmed = true;
+function serializeWorld(withRec) {
+  const arrs = {}; for (const k in SAVED) arrs[k] = [SAVED[k] instanceof Uint8Array ? 'u8' : 'f32', f32(SAVED[k])];
+  return { v: 1, simT, hHead, hFill, settings: { SIGMA, NOISE, TOL, SPREAD, VOLFRAC, PLAST, TAU, expOn, frictionOn, speed },
+    field: { W: RIGHTB - LEFTB, H: BOTB - TOPB, U, LEFTB, TOPB, screenW: W }, arrs, rec: withRec ? rec : [], recNext, actions: actions.slice(), savedAt: Date.now() };
+}
+function saveWorld() {
+  if (!saveArmed) return;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(serializeWorld(true))); } catch (_) {}
+}
+
+// ---------- последнее здоровое состояние: каждые 30 модельных секунд, пока не было ни одного сбоя ----------
+// Как только случился первый сбой, снимок замирает — это мир за ≤30 с до сбоя, его можно переиграть.
+let lastGood = null, goodNext = 0, goodFrozen = false, autoSent = false;
+function captureGood() {
+  if (goodFrozen) return;
+  if (repairs.n > 0) { goodFrozen = true; if (!autoSent && dbApi) { autoSent = true; sendWorld('автоматически при первом сбое'); } return; }
+  if (simT < goodNext) return;
+  goodNext = simT + 30;
+  try { lastGood = serializeWorld(false); } catch (_) {}
+}
+// отправка мира частями (в одном документе базы помещается до 256 КБ)
+async function sendWorld(reason) {
+  if (!dbApi || !lastGood) return false;
+  const id = 'w_' + Date.now();
+  const str = JSON.stringify({ ...lastGood, reason, failure: { repairs: repairs.n, first: repairs.first, diag: repairs.diag }, actionsAfter: actions.filter(a => a.t > lastGood.simT) });
+  const size = 180000, parts = Math.ceil(str.length / size);
+  try {
+    for (let k = 0; k < parts; k++) await dbApi.collection('worlds').doc(`${id}_${k}`).set({ id, k, parts, chunk: str.slice(k * size, (k + 1) * size) });
+    await dbApi.collection('worlds').doc(id).set({ id, parts, simT: lastGood.simT, reason, failureFirst: repairs.first });
+    return true;
+  } catch (_) { return false; }
+}
+function setSlider(id, v, label) { const el = document.getElementById(id); if (el) el.value = v; if (label) { const l = document.getElementById(label[0]); if (l) l.textContent = label[1]; } }
+function loadWorld() {
+  let st = null;
+  try { st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (_) { st = null; }
+  if (!st || st.v !== 1) return false;
+  const S = st.settings;
+  SIGMA = S.SIGMA; NOISE = S.NOISE; TOL = S.TOL; M0 = 0.85 - 0.7 * TOL; SPREAD = S.SPREAD; VOLFRAC = S.VOLFRAC; PLAST = S.PLAST; TAU = S.TAU;
+  expOn = S.expOn; frictionOn = S.frictionOn; speed = S.speed;
+  for (const k in st.arrs) { const [kind, data] = st.arrs[k]; const src = unf(data, kind === 'u8' ? Uint8Array : Float32Array); if (src.length === SAVED[k].length) SAVED[k].set(src); }
+  simT = st.simT; hHead = st.hHead; hFill = st.hFill; rec = st.rec || []; recNext = st.recNext || 0; actions = st.actions || [];
+  applyWidths();
+  setSlider('sigma', SIGMA); setSlider('noise', NOISE);
+  setSlider('tol', TOL, ['tolVal', String(TOL)]); setSlider('spread', SPREAD, ['spreadVal', String(SPREAD)]);
+  setSlider('vol', VOLFRAC, ['volVal', Math.round(VOLFRAC * 100) + '%']); setSlider('plast', PLAST, ['plastVal', PLAST > 0 ? '×' + PLAST : L('нет', 'off')]);
+  setSlider('tau', TAU, ['tauVal', TAU + L(' с', ' s')]);
+  const eb = document.getElementById('exp'); eb.setAttribute('aria-pressed', expOn ? 'true' : 'false'); eb.textContent = expOn ? L('Опыт копится', 'Experience counts') : L('Опыт не влияет', 'Experience ignored');
+  const fb = document.getElementById('fric'); fb.setAttribute('aria-pressed', frictionOn ? 'true' : 'false'); fb.textContent = frictionOn ? L('Трение есть', 'Friction on') : L('Трения нет', 'Friction off');
+  document.getElementById('speed').setAttribute('aria-pressed', speed > 1 ? 'true' : 'false');
+  logAction('продолжила сохранённый мир');
+  return true;
+}
+// автосохранение: каждые 10 секунд и при уходе со страницы
+setInterval(saveWorld, 10000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveWorld(); });
+window.addEventListener('pagehide', saveWorld);
+(() => {
+  try {
+    const st = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (st && st.v === 1) {
+      saveArmed = false;
+      const b = document.getElementById('resumeBtn');
+      const m = Math.floor(st.simT / 60), sec = Math.floor(st.simT % 60);
+      b.textContent = L(`Продолжить свой мир (${m}:${String(sec).padStart(2, '0')})`, `Continue your world (${m}:${String(sec).padStart(2, '0')})`); b.hidden = false;
+      b.addEventListener('click', () => { if (loadWorld()) { b.hidden = true; saveArmed = true; } });
+      // начала новый мир всерьёз — тогда он и будет сохраняться
+      const arm = () => { if (!saveArmed) { saveArmed = true; b.hidden = true; } };
+      for (const id in NAMES) document.getElementById(id).addEventListener('change', arm);
+      ['exp', 'fric', 'reset'].forEach(id => document.getElementById(id).addEventListener('click', arm));
+      canvas.addEventListener('pointerdown', arm);
+    }
+  } catch (_) {}
+})();
+
+// В открытой версии лаборатории нет отправки записей (это рабочий инструмент авторов внутри Claude).
+let dbApi = null;
+
+// ---------- панель «На чём держится» ----------
+document.getElementById('aboutBtn').addEventListener('click', () => { const a = document.getElementById('about'); a.hidden = false; a.scrollTop = 0; document.getElementById('aboutClose').focus(); });
+document.getElementById('aboutClose').addEventListener('click', () => { document.getElementById('about').hidden = true; document.getElementById('aboutBtn').focus(); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('about').hidden = true; });
+
+// ---------- переключение языка ----------
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = L('Лаборатория отношений', 'Relational Laboratory');
+  document.querySelectorAll('[data-en]').forEach(el => { el.textContent = LANG === 'en' ? el.dataset.en : el.dataset.ru; });
+  document.getElementById('langBtn').textContent = LANG === 'en' ? 'Русский' : 'English';
+  const eb = document.getElementById('exp'); eb.textContent = expOn ? L('Опыт копится', 'Experience counts') : L('Опыт не влияет', 'Experience ignored');
+  const fb = document.getElementById('fric'); fb.textContent = frictionOn ? L('Трение есть', 'Friction on') : L('Трения нет', 'Friction off');
+  document.getElementById('pairBtn').textContent = track ? L('Другая пара', 'Another pair') : L('Следить за парой', 'Follow a pair');
+  const stB = document.getElementById('statsBtn'); stB.textContent = document.getElementById('stats').classList.contains('short') ? L('Вся статистика', 'All statistics') : L('Свернуть статистику', 'Collapse statistics');
+  const tg = document.getElementById('toggleCtl'); tg.textContent = document.querySelector('footer').classList.contains('collapsed') ? L('Показать настройки', 'Show controls') : L('Скрыть настройки', 'Hide controls');
+  document.getElementById('plastVal').textContent = PLAST > 0 ? '×' + PLAST : L('нет', 'off');
+  document.getElementById('tauVal').textContent = TAU.toFixed(1).replace('.0', '') + L(' с', ' s');
+  const rb = document.getElementById('resumeBtn');
+  if (!rb.hidden) { try { const st0 = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (st0) { const m = Math.floor(st0.simT / 60), sec = Math.floor(st0.simT % 60); rb.textContent = L(`Продолжить свой мир (${m}:${String(sec).padStart(2, '0')})`, `Continue your world (${m}:${String(sec).padStart(2, '0')})`); } } catch (_) {} }
+  if (track) { const a = track.a, b = track.b; document.getElementById('pairTitle').textContent = L(`История пары: разница природ ${Math.abs(om[a] - om[b]).toFixed(2)} — вдвоём сойтись им нужно I ≈ ${predI[a * N + b].toFixed(0)}`, `Pair history: difference of natures ${Math.abs(om[a] - om[b]).toFixed(2)} — alone they would need I ≈ ${predI[a * N + b].toFixed(0)} to lock`); }
+  uiNext = 0;
+}
+document.getElementById('langBtn').addEventListener('click', () => {
+  LANG = LANG === 'en' ? 'ru' : 'en';
+  try { localStorage.setItem('relLabLang', LANG); } catch (_) {}
+  applyLang();
+});
+
+// ---------- цикл ----------
+reset();
+const H_FIX = 1 / 120, MAX_STEPS = 24;
+let acc = 0;
+let last = performance.now() / 1000, uiNext = 0, mol = { mols: 0, biggest: 1, inMol: 0, sizes: new Map() };
+function frame() {
+  const t = performance.now() / 1000;
+  const dt = Math.min(t - last, 0.1); last = t;
+  // шаг физики всегда один и тот же (1/120 с). Если телефон не успевает,
+  // симуляция просто идёт медленнее, но не грубее: грубый шаг «взрывал» плотные группы.
+  acc += dt * speed;
+  let n = 0;
+  while (acc >= H_FIX && n < MAX_STEPS) { step(H_FIX); acc -= H_FIX; n++; }
+  if (n === MAX_STEPS) acc = 0;
+  mol = findMolecules();
+  draw(mol);
+  measurePulse(mol);
+  checkFrozen();
+  recordFrame(mol);
+  captureGood();
+  // страховка: если палец «молчит» 15 секунд — отпускаем частицу
+  if (drag && performance.now() - (drag.last || 0) > 15000) drag = null;
+  sampleTrack(mol);
+  if (t > uiNext) { uiNext = t + 0.5; updateStats(mol); drawPlot(); drawTrack(); }
+  requestAnimationFrame(frame);
+}
+applyLang();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
