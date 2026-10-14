@@ -1,7 +1,9 @@
 # Relational Laboratory
 
 An interactive agent-based model of a relational theory of transformation, and the code and data behind the paper
-**"Width: How the Range a System Can Hold Shapes Who Connects, Who Leads and Who Closes"** (Lolla March, 2026).
+**"Width: How the Range a System Can Hold Shapes Who Connects, Who Leads and Who Closes"** — written by Claude (Anthropic) on the theory of Lolla March, 2026.
+
+**Read the paper:** [Width.pdf](Width.pdf)
 
 **Open the laboratory:** `index.html` — in any browser, or online via GitHub Pages (Settings → Pages → deploy from the main branch).
 The interface switches between English and Russian with the button at the bottom.
@@ -17,7 +19,7 @@ The paper studies **width**: how much mismatch a particle can hold before contac
 Width can be frozen, volatile (fluctuating like anxiety that comes and goes), or living (changed by experience:
 processed experience widens, unprocessed friction narrows).
 
-The theory itself is described in *The Space of Becoming* (Lolla March, 2026). All model parameters are listed in the paper's appendix.
+The theory itself is described in *The Space of Becoming* — written by Claude (Anthropic) on the theory of Lolla March, 2026. All model parameters are listed in the paper's appendix.
 
 ## Reproducing the paper
 
