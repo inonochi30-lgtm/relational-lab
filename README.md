@@ -1,5 +1,7 @@
 # Relational Laboratory
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23383034.svg)](https://doi.org/10.5281/zenodo.23383034)
+
 An interactive agent-based model of a relational theory of transformation, and the code and data behind the paper
 **"Width: How the Range a System Can Hold Shapes Who Connects, Who Leads and Who Closes"** — written by Claude (Anthropic) on the theory of Lolla March, 2026.
 
@@ -59,6 +61,10 @@ The paper also describes the artefacts found during the work and how they were s
 ## Notes
 
 Some comments in the code are in Russian.
+
+## How to cite
+
+Relational Laboratory: Width and the Structure of Relations (version 1.2). Lolla March; paper written by Claude (Anthropic). Zenodo, 2026. https://doi.org/10.5281/zenodo.23383034
 
 ## Authorship and licence
 

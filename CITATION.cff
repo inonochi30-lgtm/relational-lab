@@ -4,6 +4,7 @@ title: "Relational Laboratory: Width and the Structure of Relations"
 authors:
   - name: "Lolla March"
 version: "1.2"
+doi: 10.5281/zenodo.23383034
 date-released: 2026-10-14
 license: MIT
 abstract: "An agent-based model of a relational theory of transformation, with experiments on how the width of what a system can hold shapes who connects, who leads and who closes."
